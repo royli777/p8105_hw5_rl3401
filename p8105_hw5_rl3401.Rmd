@@ -1,0 +1,83 @@
+---
+title: "p8105_hw5_rl3401"
+author: "Ruoxi Li"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+homicides_df = read_csv("data/homicide-data.csv") 
+head(homicides_df)
+
+```
+
+```{r}
+homicide_summary=
+  homicides_df |> 
+  mutate(city_state = paste(city, state, sep = ", ")) |> 
+  group_by(city_state) |> 
+  summarize(
+    total_homicides = n(),
+    unsolved_homicides = sum(disposition %in% c("Closed without arrest", "Open/No arrest"))
+  )
+
+homicide_summary|>
+  knitr::kable()
+```
+
+```{r}
+baltimore_df =
+  homicide_summary|>
+  filter(city_state == "Baltimore, MD")
+
+baltimore_prop_test =
+  prop.test(baltimore_df$unsolved_homicides,baltimore_df$total_homicides)
+
+
+baltimore_prop_test |>
+  broom::tidy()|>
+  select(estimate, conf.low, conf.high)|>
+  knitr::kable()
+```
+
+```{r}
+library(tidyverse)
+perform_prop_test <- function(unsolved, total) {
+  prop_test_result <- prop.test(unsolved, total)
+  tidy_result <- broom::tidy(prop_test_result)
+  return(tidy_result)
+}
+
+# Step 2: Apply the function to each city
+all_cities_prop_test = homicide_summary |>
+  mutate(prop_test_results = map2(unsolved_homicides, total_homicides, ~perform_prop_test(.x, .y))) |>
+  unnest(prop_test_results) |>
+  select(city_state, estimate, conf.low, conf.high)
+
+all_cities_prop_test|>
+   knitr::kable()
+```
+
+```{r}
+ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  coord_flip() +
+  labs(title = "Estimated Proportion of Unsolved Homicides by City",
+       x = "City",
+       y = "Proportion of Unsolved Homicides")
+```
+
+
+## Problem 2
+
+
+```{r}
+
+data_files = list.files("data/hw5_data", full.names = TRUE)
+
+```
