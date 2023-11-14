@@ -14,8 +14,9 @@ library(broom)
 ```{r}
 homicides_df = read_csv("data/homicide-data.csv") 
 head(homicides_df)
-
 ```
+
+The raw data has `r nrow(homicide_df)` observations and `r ncol(homicide_df)` variables.
 
 ```{r}
 homicide_summary=
