@@ -77,7 +77,34 @@ ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate
 
 
 ```{r}
+full_df=
+  tibble(path = list.files("data/hw5_data",full.names = TRUE))|>
+  mutate(data = map(path, read_csv))
+```
 
-data_files = list.files("data/hw5_data", full.names = TRUE)
+```{r}
+tidy_df = 
+  full_df |>
+  unnest()|>
+  mutate(
+    arm = str_sub(path,15, 17),
+    subject_id=str_sub(path, 19, 20)) |>
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    values_to = "outcome",
+    names_prefix = "week_") |>
+  mutate(week = as.numeric(week)) |>
+  select(arm, subject_id , week, outcome)
+```
 
+```{r}
+ggplot(tidy_df, aes(x = week, y = outcome, group = subject_id,color=subject_id))+
+  geom_line()+
+  labs(title = "Spaghetti Plot of Observations Over Time",
+       x = "Time",
+       y = "Outcome",
+       color = "Subject_id") +
+  theme_minimal()+
+   facet_grid(~arm) 
 ```
