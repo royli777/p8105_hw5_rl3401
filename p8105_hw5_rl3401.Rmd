@@ -7,8 +7,10 @@ output: github_document
 
 ```{r}
 library(tidyverse)
+library(broom)
 ```
 
+## Problem 1 
 ```{r}
 homicides_df = read_csv("data/homicide-data.csv") 
 head(homicides_df)
@@ -29,6 +31,8 @@ homicide_summary|>
   knitr::kable()
 ```
 
+For the city of Baltimore, MD, use the prop.test function to estimate the proportion of homicides that are unsolved:
+
 ```{r}
 baltimore_df =
   homicide_summary|>
@@ -44,6 +48,8 @@ baltimore_prop_test |>
   knitr::kable()
 ```
 
+The estimated proportion is 0.646. The 95% confidence interval is ( 0.628 , 0.663 )
+
 ```{r}
 library(tidyverse)
 perform_prop_test <- function(unsolved, total) {
@@ -52,7 +58,7 @@ perform_prop_test <- function(unsolved, total) {
   return(tidy_result)
 }
 
-# Step 2: Apply the function to each city
+
 all_cities_prop_test = homicide_summary |>
   mutate(prop_test_results = map2(unsolved_homicides, total_homicides, ~perform_prop_test(.x, .y))) |>
   unnest(prop_test_results) |>
@@ -62,6 +68,7 @@ all_cities_prop_test|>
    knitr::kable()
 ```
 
+The plot of estimated proportion of unsolved Homicides by City
 ```{r}
 ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate)) +
   geom_point() +
@@ -74,13 +81,14 @@ ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate
 
 
 ## Problem 2
-
+Start with a dataframe containing all file names;iterate over file names and read in data for each subject and saving the result as a new variable in the dataframe.
 ```{r,message=FALSE}
 full_df=
   tibble(path = list.files("data/hw5_data",full.names = TRUE))|>
   mutate(data = map(path, read_csv))
 ```
 
+Create a tidy dataframe containing data from all participants, including the subject ID, arm, and observations over time:
 ```{r}
 tidy_df = 
   full_df |>
@@ -97,6 +105,7 @@ tidy_df =
   select(arm, subject_id , week, outcome)
 ```
 
+The spaghetti plot showing observations on each subject over time
 ```{r}
 ggplot(tidy_df, aes(x = week, y = outcome, group = subject_id,color=subject_id))+
   geom_line()+
@@ -108,54 +117,59 @@ ggplot(tidy_df, aes(x = week, y = outcome, group = subject_id,color=subject_id))
    facet_grid(~arm) 
 ```
 
+Over the 8-week study, participants in the experimental group exhibited an increasing trend in outcomes, despite some fluctuations. In contrast, the control group did not show a similar trend, with their outcomes remaining relatively stable throughout the study period.
 ## Problem 3
 
 Set parameters:
 ```{r}
+set.seed(123)
 n <- 30
 sigma <- 5
-mu_values <- 0:6
+mu_values <- 1:6
 alpha <- 0.05
 num_simulations <- 5000
 ```
 
-Create a dataframe to store results
+Create a dataframe to store results, perform t-test
 ```{r}
-results <- data.frame(mu = numeric(), power = numeric())
-```
-
-Perform t-test
-```{r}
-for (mu in mu_values) {
-  rejection_count <- 0
-  for (i in 1:num_simulations) {
-    sample_data <- rnorm(n, mean = mu, sd = sigma)
-    test_result <- broom::tidy(t.test(sample_data, mu = 0))
-    if (test_result$p.value < alpha) {
-      rejection_count <- rejection_count + 1
-    }
-  }
-  power <- rejection_count / num_simulations
-  results <- rbind(results, data.frame(mu, power))
-}
+results = expand_grid(mu = mu_values, sim = 1:num_simulations) |>
+  mutate(
+    data = map2(mu, sim, ~rnorm(n, .x, sigma)),
+    t_test = map(data, ~t.test(.x, mu = 0)),
+    tidy_test = map(t_test, tidy),
+    mu_hat = map_dbl(tidy_test, ~.x$estimate),
+    p_value = map_dbl(tidy_test, ~.x$p.value),
+    reject_null = p_value < alpha
+  ) |>
+  select(mu, mu_hat, p_value, reject_null)
 ```
 
 Plot showing the power of the test
 ```{r}
-plot(results$mu, results$power, type = 'b', xlab = "True Value of μ", ylab = "Power of the Test",
-     main = "Power vs Effect Size in One-Sample t-Test")
-
+results|>
+  group_by(mu) |>
+  summarize(power = mean(reject_null)) |>
+  ggplot(aes(x = mu, y = power)) +
+  geom_line() +
+  labs(title = "Power vs. True Value of μ", x = "True μ", y = "Power")
 ```
 Power increases as the effect size increases.
 
 Plot showing the average estimates of mu
 ```{r}
 ggplot(results, aes(x = mu, y = mu_hat)) +
-  geom_point(stat = "summary", fun = mean, color = "blue") +
-  geom_point(data = subset(results, reject_null), aes(x = mu, y = mu_hat), stat = "summary", fun = mean, color = "red") +
-  ylab("Average estimate of mu") +
-  xlab("True value of mu")
+  geom_line(stat = "summary", fun = mean, color = "blue", size = 1) +
+  geom_point(stat = "summary", fun = mean, color = "blue", size = 2) +
+  geom_line(data = subset(results, reject_null), aes(x = mu, y = mu_hat), 
+            stat = "summary", fun = mean, color = "red", size = 1) +
+  geom_point(data = subset(results, reject_null), aes(x = mu, y = mu_hat), 
+             stat = "summary", fun = mean, color = "red", size = 2) +
+  ylab("Average Estimate of μ") +
+  xlab("True Value of μ") +
+  ggtitle("Average Estimates of μ^ vs. True μ") +
+  scale_color_identity(guide = 'legend', labels = c("All Tests", "Reject Null")) +
+  theme_minimal()
+
 ```
 
 When the mean is modest, particularly below 4 in this scenario, the observed discrepancy between the sample average \( \hat{\mu} \) in instances where the null hypothesis is rejected and the true mean becomes evident. This divergence can be attributed to the relatively minimal effect size coupled with a correspondingly lower statistical power of the test.
-```
