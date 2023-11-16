@@ -16,7 +16,9 @@ homicides_df = read_csv("data/homicide-data.csv")
 head(homicides_df)
 ```
 
-The raw data has `r nrow(homicide_df)` observations and `r ncol(homicide_df)` variables.
+The raw data has `r nrow(homicides_df)` observations and `r ncol(homicides_df)` variables.
+
+Describe the raw data. Create a city_state variable and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
 
 ```{r}
 homicide_summary=
@@ -49,7 +51,7 @@ baltimore_prop_test |>
   knitr::kable()
 ```
 
-The estimated proportion is 0.646. The 95% confidence interval is ( 0.628 , 0.663 )
+The estimated proportion is 0.646. The 95% confidence interval is ( 0.628 , 0.663 ).
 
 ```{r}
 library(tidyverse)
@@ -69,7 +71,8 @@ all_cities_prop_test|>
    knitr::kable()
 ```
 
-The plot of estimated proportion of unsolved Homicides by City
+Draw the plot of estimated proportion of unsolved Homicides by City:
+
 ```{r}
 ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate)) +
   geom_point() +
@@ -82,7 +85,9 @@ ggplot(all_cities_prop_test, aes(x = reorder(city_state, estimate), y = estimate
 
 
 ## Problem 2
+
 Start with a dataframe containing all file names;iterate over file names and read in data for each subject and saving the result as a new variable in the dataframe.
+
 ```{r,message=FALSE}
 full_df=
   tibble(path = list.files("data/hw5_data",full.names = TRUE))|>
@@ -90,6 +95,7 @@ full_df=
 ```
 
 Create a tidy dataframe containing data from all participants, including the subject ID, arm, and observations over time:
+
 ```{r}
 tidy_df = 
   full_df |>
@@ -106,7 +112,8 @@ tidy_df =
   select(arm, subject_id , week, outcome)
 ```
 
-The spaghetti plot showing observations on each subject over time
+Draw the spaghetti plot showing observations on each subject over time:
+
 ```{r}
 ggplot(tidy_df, aes(x = week, y = outcome, group = subject_id,color=subject_id))+
   geom_line()+
@@ -119,9 +126,11 @@ ggplot(tidy_df, aes(x = week, y = outcome, group = subject_id,color=subject_id))
 ```
 
 Over the 8-week study, participants in the experimental group exhibited an increasing trend in outcomes, despite some fluctuations. In contrast, the control group did not show a similar trend, with their outcomes remaining relatively stable throughout the study period.
+
 ## Problem 3
 
 Set parameters:
+
 ```{r}
 set.seed(123)
 n <- 30
@@ -131,7 +140,8 @@ alpha <- 0.05
 num_simulations <- 5000
 ```
 
-Create a dataframe to store results, perform t-test
+Create a dataframe to store results, perform t-test:
+
 ```{r}
 results = expand_grid(mu = mu_values, sim = 1:num_simulations) |>
   mutate(
@@ -145,7 +155,8 @@ results = expand_grid(mu = mu_values, sim = 1:num_simulations) |>
   select(mu, mu_hat, p_value, reject_null)
 ```
 
-Plot showing the power of the test
+Draw the plot showing the power of the test:
+
 ```{r}
 results|>
   group_by(mu) |>
@@ -154,9 +165,11 @@ results|>
   geom_line() +
   labs(title = "Power vs. True Value of μ", x = "True μ", y = "Power")
 ```
+
 Power increases as the effect size increases.
 
-Plot showing the average estimates of mu
+Draw the plot showing the average estimates of mu:
+
 ```{r}
 ggplot(results, aes(x = mu, y = mu_hat)) +
   geom_line(stat = "summary", fun = mean, color = "blue", size = 1) +
