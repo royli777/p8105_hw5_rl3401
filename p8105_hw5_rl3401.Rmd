@@ -4,6 +4,9 @@ author: "Ruoxi Li"
 date: "`r Sys.Date()`"
 output: github_document
 ---
+```{r,echo=FALSE}
+Sys.setenv(LANGUAGE = "en")
+```
 
 ```{r}
 library(tidyverse)
@@ -11,14 +14,15 @@ library(broom)
 ```
 
 ## Problem 1 
+
+Describe the raw data. Create a city_state variable and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
+
 ```{r}
 homicides_df = read_csv("data/homicide-data.csv") 
 head(homicides_df)
 ```
 
 The raw data has `r nrow(homicides_df)` observations and `r ncol(homicides_df)` variables.
-
-Describe the raw data. Create a city_state variable and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
 
 ```{r}
 homicide_summary=
